@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Environments
+.env
+.venv
+.venv*
+env/
+venv/
+ENV/
+
+# Test / lint / type caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ADK / agents-cli runtime
+.adk/
+.google-agents-cli/
+.agents-cli-scripts/
+.persist_vector_store
+.saved_chats
+
+# Terraform
+.terraform*
+*.tfstate
+*.tfstate.*
+my_env.tfvars
+
+# Local agent guide (not for the repo)
+CLAUDE.md
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json

@@ -1,0 +1,68 @@
+[
+  {
+    "beginRendering": {
+      "surfaceId": "storybook-preview",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "storybook-preview",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Card": {
+              "child": "content-col"
+            }
+          }
+        },
+        {
+          "id": "content-col",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "preview-title",
+                  "preview-subtitle",
+                  "preview-open"
+                ]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        },
+        {
+          "id": "preview-title",
+          "component": {
+            "Text": {
+              "text": { "literalString": "✨ BOOK_TITLE_HERE" },
+              "usageHint": "h2"
+            }
+          }
+        },
+        {
+          "id": "preview-subtitle",
+          "component": {
+            "Text": {
+              "text": { "literalString": "魔法绘本已开始创作，点击下方打开查看。" },
+              "usageHint": "caption"
+            }
+          }
+        },
+        {
+          "id": "preview-open",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "👉 [点此打开魔法绘本](READER_URL_HERE)"
+              },
+              "usageHint": "body"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

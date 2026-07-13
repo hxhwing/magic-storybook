@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>创作新绘本 - 魔法绘本</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#d2e6ef",
+                        "secondary": "#006e1c",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#d2c6a1",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface": "#f2fbff",
+                        "primary-container": "#ffe16d",
+                        "surface-dim": "#c9dde6",
+                        "tertiary-container": "#ffdcbe",
+                        "background": "#f2fbff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffe16d",
+                        "on-secondary-container": "#005313",
+                        "on-surface": "#0b1e24",
+                        "surface-container-low": "#e4f7ff",
+                        "outline": "#807757",
+                        "on-background": "#0b1e24",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#8b5000",
+                        "on-tertiary-container": "#693c00",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary-container": "#94f990",
+                        "primary": "#705d00",
+                        "on-surface-variant": "#4e462a",
+                        "surface-container-high": "#d7ebf4",
+                        "on-primary-container": "#544600",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ddf1fa"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .style-card {
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .style-card:hover {
+            transform: scale(1.03);
+        }
+
+        /* Loading overlay */
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(242, 251, 255, 0.96);
+            backdrop-filter: blur(16px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        #loading-overlay.show {
+            display: flex;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-18px) scale(1.1);
+            }
+        }
+
+        .bounce {
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+
+        /* Progress bar */
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e9c400, #705d00);
+            border-radius: 9999px;
+            transition: width 0.6s ease;
+        }
+
+        /* Step list */
+        .step-item {
+            transition: all 0.3s ease;
+        }
+
+        .step-item.done {
+            color: #006e1c;
+        }
+
+        .step-item.active {
+            color: #705d00;
+            font-weight: 700;
+        }
+
+        .step-item.pending {
+            color: #4e462a;
+            opacity: 0.5;
+        }
+
+        .step-item.warn {
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        /* Error state */
+        #error-box {
+            display: none;
+        }
+
+        #error-box.show {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface min-h-screen pb-12">
+
+    <!-- Loading / Progress Overlay -->
+    <div id="loading-overlay">
+        <!-- Back to home button (always visible on overlay) -->
+        <a href="/" id="overlay-back-btn"
+            class="absolute top-4 left-4 z-[110] flex items-center gap-2 bg-surface-container-high/90 backdrop-blur text-on-surface-variant px-4 py-2 rounded-full font-bold hover:scale-105 hover:bg-surface-dim transition-all duration-300 shadow-md">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+            返回主页
+        </a>
+
+        <div class="text-7xl bounce" id="loading-emoji">✨</div>
+        <div class="text-center max-w-lg">
+            <h2 class="text-3xl font-black text-primary mb-3" id="loading-title">AI 魔法正在启动...</h2>
+            <p class="text-on-surface-variant text-lg" id="loading-msg">正在准备为你创作专属绘本</p>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full max-w-md">
+            <div class="h-4 w-full bg-secondary-container rounded-full overflow-hidden shadow-inner">
+                <div id="progress-fill" style="width: 3%"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-xs text-on-surface-variant font-medium">
+                <span id="progress-label">准备中...</span>
+                <span id="progress-pct">0%</span>
+            </div>
+        </div>
+
+        <!-- Step list -->
+        <div id="step-list"
+            class="w-full max-w-md bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)] space-y-2 max-h-60 overflow-y-auto">
+            <p class="text-sm text-on-surface-variant/60 font-bold uppercase tracking-widest mb-3">创作日志</p>
+        </div>
+
+        <!-- Error box -->
+        <div id="error-box" class="w-full max-w-md bg-red-50 border-2 border-red-200 rounded-xl p-6 flex-col gap-4">
+            <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-red-500 text-2xl mt-0.5">error</span>
+                <div>
+                    <h3 class="font-bold text-red-700 mb-1">创作遇到了问题</h3>
+                    <p id="error-msg" class="text-red-600 text-sm"></p>
+                </div>
+            </div>
+            <button onclick="resetForm()"
+                class="w-full py-3 bg-primary-container text-on-primary-container rounded-full font-bold hover:scale-105 transition-all active:scale-95">
+                重新尝试
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Nav -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-sky-50/80 backdrop-blur-xl shadow-[0_32px_32px_-12px_rgba(112,93,0,0.06)]">
+        <a href="/" class="flex items-center gap-2">
+            <span class="text-2xl font-black text-yellow-700 tracking-tight">✨ 魔法绘本</span>
+        </a>
+        <a href="/"
+            class="flex items-center gap-2 bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-full font-bold hover:scale-105 hover:bg-surface-dim transition-all duration-300">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+            返回主页
+        </a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 md:pt-32 px-4 max-w-4xl mx-auto">
+        <div class="text-center mb-8 md:mb-12">
+            <h1 class="text-3xl md:text-5xl font-black text-primary mb-3 md:mb-4 tracking-tight">开启你的奇妙故事！</h1>
+            <p class="text-base md:text-lg text-on-surface-variant max-w-lg mx-auto">填写魔法细节，赋予你的绘本生命力！</p>
+        </div>
+
+        <section class="space-y-10">
+            <div
+                class="bg-surface-container-lowest rounded-xl p-8 md:p-12 shadow-[0_32px_32px_-12px_rgba(11,30,36,0.06)]">
+                <form id="create-form" class="space-y-12" onsubmit="handleSubmit(event)">
+
+                    <!-- Title -->
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                            <span class="material-symbols-outlined text-primary">auto_stories</span>
+                            绘本名称
+                        </label>
+                        <input id="book-title"
+                            class="w-full bg-surface-container-low border-none rounded-xl px-6 py-5 text-xl text-on-surface focus:ring-4 focus:ring-primary-container transition-all placeholder:text-on-surface-variant/40"
+                            placeholder="例如：小星星的大冒险" type="text" required />
+                    </div>
+
+                    <!-- Theme -->
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                            <span class="material-symbols-outlined text-primary">category</span>
+                            故事主题
+                        </label>
+                        <input id="book-theme"
+                            class="w-full bg-surface-container-low border-none rounded-xl px-6 py-5 text-xl text-on-surface focus:ring-4 focus:ring-primary-container transition-all placeholder:text-on-surface-variant/40"
+                            placeholder="例如：会飞的小星星在云朵上野餐..." type="text" required />
+                    </div>
+
+                    <!-- Style -->
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                            <span class="material-symbols-outlined text-primary">palette</span>
+                            画面风格
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <!-- Auto (Active default) -->
+                            <div class="style-card active relative rounded-xl p-1 bg-primary-container ring-4 ring-primary-container"
+                                onclick="selectStyle(this, '')" data-style="">
+                                <div class="bg-surface-container-lowest rounded-lg overflow-hidden h-28 md:h-32 mb-2 flex items-center justify-center relative"
+                                    style="background: linear-gradient(135deg, #ffe16d 0%, #94f990 50%, #a5d8ff 100%);">
+                                    <span class="text-6xl drop-shadow-lg">🎲</span>
+                                </div>
+                                <p class="text-center font-bold text-on-primary-container pb-2">自动（AI 决定）</p>
+                                <span class="check-icon absolute top-3 right-3 bg-primary text-white rounded-full p-1">
+                                    <span class="material-symbols-outlined text-sm block"
+                                        style="font-variation-settings: 'FILL' 1;">check</span>
+                                </span>
+                            </div>
+                            <!-- 3D -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '3D动画')" data-style="3D动画">
+                                <div
+                                    class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2 relative">
+                                    <img class="w-full h-full object-cover" alt="3D动画风格"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHfNbszH-rwEkPgEW77MTDd3XkT7VzYJUbtVla665F3jb6_8m6TKd_OejU_aEmCbw66inQHC3cIpx0FzjuoHrpdGr2ZzK-Y8kSsRTNqT81LJsdZKeUWwupax2DLJUO2zyPJEyVYWZAhLrT54dpTigd_JZRS2bR9BkkmTNgUGg7Np_hWKoJtvsYyL9QH8ua7Qdb-iplzw6KOQddnR42MOJ3RvMXFqjQFX5L9V2arb7yqxJzZT0HwOZtlRYslA-bHRQF4qLuj-cx2AaL" />
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">3D 动画</p>
+                            </div>
+                            <!-- Watercolor -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '水彩风')" data-style="水彩风">
+                                <div class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2">
+                                    <img class="w-full h-full object-cover" alt="水彩风格"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSyEbQY5ADTbx3VD8KvocQuDuteUwVPZURHw4SHSeJfNzHCqs6FG4afkFAaD2lMRpY3nk7oZaxuHW247HLCv692_6l9dDIOseFEHJZwn0MStknQkSkOOpUuW9J7wisbdjoy5wSlqHqVT2ZgLTg-B7SspKDCuMsmoxzfs425Ac3bE3RB4d6wfl7f31bbi369ln0PZr6yCOEv66BRCFEwsOuR0Y1EPs9jYu5Vlx_CYu3f297Id3sxPRgOicZT13XjwVLUQxjM4IYHKoX" />
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">水彩风</p>
+                            </div>
+                            <!-- Crayon -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '蜡笔画')" data-style="蜡笔画">
+                                <div class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2">
+                                    <img class="w-full h-full object-cover" alt="蜡笔画风格"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7tui26dy_BsiPstEez9mGupgW-ppi1wmDup6j_x9Rc_UQuGTQO0gHEcvDfSIIUDgePTGbmqMi1bCwnrG5RUTevWl6NF4Sze4qpDq8hrpWVWV7ZwEBv3ZBiYlg6VI_h1erF4byTSfRZs_meOLu6yXNnNW783uQUiAJoElHjym5ySInJ0zWROi8gwjdcADZtAMBBMYogkoHkbWKPTAbGklikrIgA3mh1b8FOck5gsFucIZ2xJe_G0SQsMDzEqax4V-__fT40rkYOP9z" />
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">蜡笔画</p>
+                            </div>
+                            <!-- Paper Cut-out 剪纸风 -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '剪纸风')" data-style="剪纸风">
+                                <div class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2 flex items-center justify-center"
+                                    style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #fbbf24 100%);">
+                                    <span class="text-6xl drop-shadow-lg">🏮</span>
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">剪纸风</p>
+                            </div>
+                            <!-- Claymation 黏土动画 -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '黏土动画')" data-style="黏土动画">
+                                <div class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2 flex items-center justify-center"
+                                    style="background: linear-gradient(135deg, #a3e635 0%, #4ade80 50%, #facc15 100%);">
+                                    <span class="text-6xl drop-shadow-lg">🧸</span>
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">黏土动画</p>
+                            </div>
+                            <!-- Chinese Ink Wash 水墨风 -->
+                            <div class="style-card relative rounded-xl p-1 hover:bg-surface-container-high transition-colors"
+                                onclick="selectStyle(this, '水墨风')" data-style="水墨风">
+                                <div class="bg-surface-container-low rounded-lg overflow-hidden h-28 md:h-32 mb-2 flex items-center justify-center"
+                                    style="background: linear-gradient(135deg, #f5f5f4 0%, #d6d3d1 40%, #78716c 100%);">
+                                    <span class="text-6xl drop-shadow-lg">🎋</span>
+                                </div>
+                                <p class="text-center font-medium text-on-surface-variant pb-2">水墨风</p>
+                            </div>
+                        </div>
+                        <input type="hidden" id="selected-style" value="" />
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Page Count -->
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                                <span class="material-symbols-outlined text-primary">counter_1</span>
+                                绘本页数
+                            </label>
+                            <select id="page-count"
+                                class="w-full bg-surface-container-low border-none rounded-xl px-6 py-4 text-lg text-on-surface focus:ring-4 focus:ring-primary-container appearance-none cursor-pointer"
+                                onchange="toggleCustomPages(this)">
+                                <option value="5">5 页 (快速故事)</option>
+                                <option value="6" selected>6 页 (刚刚好！)</option>
+                                <option value="10">10 页</option>
+                                <option value="15">15 页 (长篇冒险)</option>
+                                <option value="20">20 页 (精彩史诗)</option>
+                                <option value="custom">自定义页数...</option>
+                            </select>
+                            <input id="custom-page-count" type="number" min="3" max="30" value="8"
+                                class="hidden w-full bg-surface-container-low border-none rounded-xl px-6 py-4 text-lg text-on-surface focus:ring-4 focus:ring-primary-container mt-2"
+                                placeholder="输入页数 (3~30)" />
+                        </div>
+                        <!-- Music Style -->
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                                <span class="material-symbols-outlined text-primary">music_note</span>
+                                主题曲风格
+                            </label>
+                            <select id="music-style"
+                                class="w-full bg-surface-container-low border-none rounded-xl px-6 py-4 text-lg text-on-surface focus:ring-4 focus:ring-primary-container appearance-none cursor-pointer">
+                                <option value="" selected>🎲 自动 (AI 按主题选择)</option>
+                                <option value="儿歌">🎵 儿歌 (温馨童趣)</option>
+                                <option value="国风">🏮 国风 (古韵悠扬)</option>
+                                <option value="动漫">🌸 动漫 (热血冒险)</option>
+                                <option value="POP">🎤 POP (活力流行)</option>
+                                <option value="R&B">🎷 R&B (律动节拍)</option>
+                                <option value="RAP">🎧 RAP (说唱酷炫)</option>
+                                <option value="摇篮曲">🌙 摇篮曲 (甜蜜入梦)</option>
+                                <option value="古典">🎻 古典 (优雅童话)</option>
+                                <option value="电子">🎹 电子 (未来探险)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Outline -->
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 text-xl font-bold text-on-surface ml-2">
+                            <span class="material-symbols-outlined text-primary">edit_note</span>
+                            故事大纲 (选填)
+                        </label>
+                        <textarea id="story-outline"
+                            class="w-full bg-surface-container-low border-none rounded-xl px-6 py-4 text-lg text-on-surface focus:ring-4 focus:ring-primary-container transition-all resize-none placeholder:text-on-surface-variant/40"
+                            placeholder="简单描述一下故事里发生了什么..." rows="3"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-6 pt-6">
+                        <a href="/"
+                            class="w-full md:w-auto px-10 py-5 bg-surface-container-high text-on-surface-variant rounded-full text-xl font-bold hover:bg-surface-dim transition-all active:scale-95 text-center">
+                            返回书架
+                        </a>
+                        <button type="submit"
+                            class="w-full md:w-auto px-12 py-5 bg-primary-container text-on-primary-container rounded-full text-2xl font-black shadow-[0_16px_32px_-8px_rgba(112,93,0,0.3)] hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-3">
+                            <span class="material-symbols-outlined"
+                                style="font-variation-settings: 'FILL' 1;">magic_button</span>
+                            生成魔法绘本！
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </section>
+
+        <div class="mt-20 flex justify-between items-end opacity-40 pointer-events-none">
+            <div class="relative -rotate-12 translate-x-4 text-8xl">🌟</div>
+            <div class="relative rotate-12 -translate-x-4 text-7xl">🌙</div>
+        </div>
+    </main>
+
+    <footer class="w-full py-10 px-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-sky-50 mt-20">
+        <div class="text-lg font-bold text-yellow-700">✨ 魔法绘本</div>
+        <div class="flex gap-6">
+            <a class="text-slate-500 text-sm font-medium hover:text-yellow-600 underline" href="#">账号设置</a>
+            <a class="text-slate-500 text-sm font-medium hover:text-yellow-600 underline" href="#">隐私政策</a>
+        </div>
+        <div class="text-sm text-slate-500">© 2024 魔法绘本. 保留所有权利。</div>
+    </footer>
+
+    <script>
+        // ─── Custom Page Count Toggle ───────────────────────────
+        function toggleCustomPages(sel) {
+            const customInput = document.getElementById('custom-page-count');
+            if (sel.value === 'custom') {
+                customInput.classList.remove('hidden');
+                customInput.focus();
+            } else {
+                customInput.classList.add('hidden');
+            }
+        }
+
+        function getPageCount() {
+            const sel = document.getElementById('page-count');
+            if (sel.value === 'custom') {
+                const v = parseInt(document.getElementById('custom-page-count').value) || 10;
+                return Math.max(3, Math.min(30, v));
+            }
+            return parseInt(sel.value);
+        }
+
+        // ─── Style Picker ───────────────────────────────────────
+        function selectStyle(el, style) {
+            document.querySelectorAll('.style-card').forEach(card => {
+                card.classList.remove('active', 'bg-primary-container', 'ring-4', 'ring-primary-container');
+                const check = card.querySelector('.check-icon');
+                if (check) check.remove();
+                const label = card.querySelector('p');
+                if (label) label.className = 'text-center font-medium text-on-surface-variant pb-2';
+            });
+            el.classList.add('active', 'bg-primary-container', 'ring-4', 'ring-primary-container');
+            const label = el.querySelector('p');
+            if (label) label.className = 'text-center font-bold text-on-primary-container pb-2';
+            const check = document.createElement('span');
+            check.className = 'check-icon absolute top-3 right-3 bg-primary text-white rounded-full p-1';
+            check.innerHTML = '<span class="material-symbols-outlined text-sm block" style="font-variation-settings: \'FILL\' 1;">check</span>';
+            el.appendChild(check);
+            document.getElementById('selected-style').value = style;
+        }
+
+        // ─── Progress Helpers ───────────────────────────────────
+        let totalSteps = 0;
+        const emojis = ['✨', '🌟', '🎨', '🖼️', '📖', '🚀', '🌈', '💫'];
+
+        function setProgress(step, total) {
+            if (total > 0) totalSteps = total;
+            const pct = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+            document.getElementById('progress-pct').textContent = `${pct}%`;
+            document.getElementById('loading-emoji').textContent = emojis[step % emojis.length];
+        }
+
+        function addLog(msg, type = 'active') {
+            const list = document.getElementById('step-list');
+            const item = document.createElement('div');
+            item.className = `step-item ${type} flex items-center gap-2 text-sm py-1`;
+
+            const icon = type === 'done' ? '✅' : type === 'warn' ? '⚠️' : type === 'error' ? '❌' : '⏳';
+            item.textContent = `${icon} ${msg}`;
+
+            // mark previous active as done
+            list.querySelectorAll('.step-item.active').forEach(i => {
+                i.classList.remove('active');
+                i.classList.add('done');
+                i.textContent = '✅ ' + i.textContent.slice(2);
+            });
+
+            list.appendChild(item);
+            list.scrollTop = list.scrollHeight;
+
+            document.getElementById('loading-msg').textContent = msg;
+        }
+
+        function showError(msg) {
+            document.getElementById('error-msg').textContent = msg;
+            document.getElementById('error-box').classList.add('show');
+            document.getElementById('loading-title').textContent = '创作遇到了问题 😢';
+            document.getElementById('loading-emoji').textContent = '😢';
+            addLog(msg, 'error');
+        }
+
+        function resetForm() {
+            document.getElementById('loading-overlay').classList.remove('show');
+            document.getElementById('error-box').classList.remove('show');
+            document.getElementById('step-list').innerHTML = '<p class="text-sm text-on-surface-variant/60 font-bold uppercase tracking-widest mb-3">创作日志</p>';
+            document.getElementById('progress-fill').style.width = '3%';
+            document.getElementById('progress-pct').textContent = '0%';
+            // Remove complete-actions if present
+            const ca = document.getElementById('complete-actions');
+            if (ca) ca.remove();
+            // Reset emoji bounce
+            document.getElementById('loading-emoji').classList.add('bounce');
+        }
+
+        // ─── Submit & Poll ──────────────────────────────────────
+        let pollBookId = null;
+        let pollTimer = null;
+        let lastLoggedMessage = '';
+
+        // Check URL for bookId (resume tracking an existing generation)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('bookId')) {
+            pollBookId = urlParams.get('bookId');
+            document.getElementById('loading-overlay').classList.add('show');
+            document.getElementById('loading-title').textContent = '正在追踪生成进度...';
+            startPolling();
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('book-title').value.trim();
+            const theme = document.getElementById('book-theme').value.trim();
+            if (!title || !theme) return;
+
+            document.getElementById('loading-overlay').classList.add('show');
+            document.getElementById('loading-title').textContent = `正在提交「${title}」...`;
+            setProgress(0, 1);
+            addLog('📤 提交创作任务...', 'active');
+
+            const payload = {
+                title, theme,
+                style: document.getElementById('selected-style').value,
+                musicStyle: document.getElementById('music-style').value,
+                pageCount: getPageCount(),
+                outline: document.getElementById('story-outline').value,
+            };
+
+            try {
+                const resp = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const result = await resp.json();
+                if (result.error) throw new Error(result.error);
+
+                pollBookId = result.bookId;
+                addLog(`✅ 任务已提交！bookId: ${pollBookId}`, 'done');
+                addLog('🔄 后台生成中，即使关闭页面也会继续...', 'active');
+                document.getElementById('loading-title').textContent = `正在创作「${title}」...`;
+
+                // Update URL so user can resume
+                history.replaceState(null, '', `/create?bookId=${pollBookId}`);
+                startPolling();
+            } catch (err) {
+                showError('提交失败: ' + err.message);
+            }
+        }
+
+        function startPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(pollStatus, 3000);
+            pollStatus(); // immediate first check
+        }
+
+        async function pollStatus() {
+            if (!pollBookId) return;
+            try {
+                const resp = await fetch(`/api/books/${pollBookId}`);
+                const { book } = await resp.json();
+                if (!book) return;
+
+                const total = (book.totalPages || book.pageCount || 10) + 2;
+                setProgress(book.progress || 0, total);
+                document.getElementById('loading-msg').textContent = book.statusMessage || '处理中...';
+
+                // Only log when message actually changes
+                const msg = book.statusMessage || '处理中...';
+                if (msg !== lastLoggedMessage) {
+                    lastLoggedMessage = msg;
+                    if (book.status === 'generating_outline') {
+                        addLog('✍️ ' + msg, 'active');
+                    } else if (book.status === 'generating_images') {
+                        addLog('🖼️ ' + msg, 'active');
+                        document.getElementById('loading-title').textContent = `正在创作「${book.title}」...`;
+                    }
+                }
+
+                if (book.status === 'complete') {
+                    clearInterval(pollTimer);
+                    setProgress(total, total);
+                    sessionStorage.setItem('currentBook', JSON.stringify(book));
+
+                    const failed = book.failedPages || 0;
+                    if (failed > 0) {
+                        // Some pages failed — show warning with options
+                        addLog(`⚠️ 绘本创作完成，但有 ${failed} 页插画生成失败`, 'warn');
+                        document.getElementById('loading-title').textContent = '绘本创作完成（部分插画缺失）';
+                        document.getElementById('loading-emoji').textContent = '⚠️';
+                        document.getElementById('loading-emoji').classList.remove('bounce');
+                        document.getElementById('loading-msg').textContent = `${failed} 页插画生成失败，可通过编辑重新生成`;
+
+                        // Show action buttons for failed case
+                        const actionsHtml = `
+                            <div id="complete-actions" class="w-full max-w-md flex flex-col sm:flex-row gap-3 mt-2">
+                                <a href="/reader"
+                                    class="flex-1 py-3 bg-primary-container text-on-primary-container rounded-full font-bold text-center hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">auto_stories</span>
+                                    先去阅读
+                                </a>
+                                <a href="/edit?bookId=${pollBookId}"
+                                    class="flex-1 py-3 bg-secondary text-on-secondary rounded-full font-bold text-center hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">edit</span>
+                                    去编辑修复
+                                </a>
+                            </div>`;
+                        // Insert actions after step-list
+                        const stepList = document.getElementById('step-list');
+                        stepList.insertAdjacentHTML('afterend', actionsHtml);
+                    } else {
+                        // All pages succeeded — auto redirect
+                        addLog('🎉 绘本创作完成！', 'done');
+                        document.getElementById('loading-title').textContent = '绘本创作完成！🎉';
+                        setTimeout(() => { window.location.href = '/reader'; }, 1200);
+                    }
+                } else if (book.status === 'error') {
+                    clearInterval(pollTimer);
+                    showError(book.statusMessage || '生成失败');
+                }
+            } catch (err) {
+                console.error('Poll error:', err);
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+# Keep Cloud Build source uploads small — the Docker image only needs
+# pyproject.toml, uv.lock, README.md, app/ and public/.
+.git/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.adk/
+tests/
+deployment/
+node_modules/
+.DS_Store
+*.md
+!README.md
+intro.jpeg   # README image only; not needed in the build/runtime image

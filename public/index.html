@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>魔法绘本</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#d2e6ef",
+                        "secondary": "#006e1c",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffdcbe",
+                        "outline-variant": "#d2c6a1",
+                        "surface": "#f2fbff",
+                        "primary-container": "#ffe16d",
+                        "surface-dim": "#c9dde6",
+                        "tertiary-container": "#ffdcbe",
+                        "background": "#f2fbff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffe16d",
+                        "on-secondary-container": "#005313",
+                        "on-surface": "#0b1e24",
+                        "surface-container-low": "#e4f7ff",
+                        "outline": "#807757",
+                        "on-background": "#0b1e24",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#8b5000",
+                        "on-tertiary-container": "#693c00",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary-container": "#94f990",
+                        "primary": "#705d00",
+                        "on-surface-variant": "#4e462a",
+                        "surface-container-high": "#d7ebf4",
+                        "on-primary-container": "#544600",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ddf1fa"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .book-card {
+            transition: transform 0.35s cubic-bezier(.34, 1.56, .64, 1), box-shadow 0.3s ease;
+        }
+
+        .book-card:hover {
+            transform: translateY(-10px) rotate(-1deg);
+            box-shadow: 0 32px 48px -12px rgba(11, 30, 36, 0.15);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-14px)
+            }
+        }
+
+        .float-anim {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Delete Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(11, 30, 36, 0.45);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem 2.25rem;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 32px 64px -12px rgba(11, 30, 36, 0.25);
+            transform: scale(0.92) translateY(12px);
+            transition: transform 0.3s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 200;
+            background: #1a1a2e;
+            color: white;
+            padding: 0.85rem 1.5rem;
+            border-radius: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface min-h-screen">
+
+    <!-- Top Nav -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-sky-50/80 backdrop-blur-xl shadow-[0_16px_32px_-12px_rgba(112,93,0,0.06)]">
+        <a href="/" class="flex items-center gap-2">
+            <span class="text-2xl font-black text-yellow-700 tracking-tight">✨ 魔法绘本</span>
+        </a>
+        <div class="hidden md:flex gap-8 items-center">
+            <a class="text-yellow-900/80 font-bold underline decoration-yellow-400 decoration-2 underline-offset-4 px-3 py-1 rounded-full"
+                href="/">我的书架</a>
+        </div>
+        <a href="/create"
+            class="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-bold hover:scale-105 transition-all duration-300 shadow-[0_8px_24px_-4px_rgba(112,93,0,0.2)]">
+            创作新绘本
+        </a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-24 md:pt-36 pb-8 px-4 md:px-6 max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
+            <div class="flex-1">
+                <p class="text-tertiary font-bold tracking-widest uppercase text-xs md:text-sm mb-2 md:mb-3">你的魔法书架</p>
+                <h1 class="text-3xl md:text-6xl font-black text-primary leading-tight tracking-tight mb-3 md:mb-5">
+                    每个故事<br />都是一个<br />奇妙宇宙！
+                </h1>
+                <p class="text-base md:text-lg text-on-surface-variant max-w-md mb-6 md:mb-8">
+                    用你的想象力，创造属于自己的魔法绘本。每一页都充满了惊喜和欢笑！
+                </p>
+                <a href="/create"
+                    class="inline-flex items-center gap-2 md:gap-3 px-6 py-3 md:px-10 md:py-5 bg-primary-container text-on-primary-container rounded-full text-lg md:text-xl font-black shadow-[0_16px_32px_-8px_rgba(112,93,0,0.3)] hover:scale-105 transition-all active:scale-95">
+                    <span class="material-symbols-outlined"
+                        style="font-variation-settings:'FILL' 1;">magic_button</span>
+                    开始创作！
+                </a>
+            </div>
+            <div class="flex-shrink-0 hidden md:flex items-end gap-4">
+                <div class="float-anim" style="animation-delay:0s">
+                    <div
+                        class="w-24 h-32 bg-primary-container rounded-xl shadow-[0_16px_32px_-8px_rgba(112,93,0,0.2)] flex items-center justify-center text-5xl transform -rotate-6">
+                        🚀</div>
+                </div>
+                <div class="float-anim mb-8" style="animation-delay:0.8s">
+                    <div
+                        class="w-28 h-40 bg-tertiary-container rounded-xl shadow-[0_16px_32px_-8px_rgba(139,80,0,0.2)] flex items-center justify-center text-6xl transform rotate-3">
+                        📖</div>
+                </div>
+                <div class="float-anim" style="animation-delay:1.6s">
+                    <div
+                        class="w-24 h-32 bg-secondary-container rounded-xl shadow-[0_16px_32px_-8px_rgba(0,110,28,0.15)] flex items-center justify-center text-5xl transform -rotate-3">
+                        ⭐</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bookshelf -->
+    <section class="py-16 px-6 max-w-6xl mx-auto">
+        <div class="flex items-center justify-between mb-10">
+            <h2 class="text-3xl font-black text-on-surface">我的绘本</h2>
+            <span id="book-count"
+                class="bg-surface-container-low px-4 py-2 rounded-full text-on-surface-variant font-medium text-sm">加载中...</span>
+        </div>
+        <div id="bookshelf" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Loading skeleton -->
+            <div class="bg-surface-container-low rounded-xl h-80 animate-pulse"></div>
+            <div class="bg-surface-container-low rounded-xl h-80 animate-pulse" style="animation-delay:.15s"></div>
+            <!-- New Book Card (always shown) -->
+            <div class="book-card bg-surface-container-low rounded-xl overflow-hidden border-4 border-dashed border-outline-variant/40 cursor-pointer group flex flex-col items-center justify-center min-h-[280px]"
+                onclick="location.href='/create'" id="new-book-card">
+                <div class="flex flex-col items-center gap-4 p-8 text-center">
+                    <div
+                        class="w-20 h-20 bg-primary-container rounded-xl flex items-center justify-center shadow-[0_8px_24px_-4px_rgba(112,93,0,0.2)] group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <span class="material-symbols-outlined text-4xl text-primary"
+                            style="font-variation-settings:'FILL' 1;">add</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black text-on-surface mb-1">创作新绘本</h3>
+                        <p class="text-on-surface-variant text-sm">开启你的下一个奇妙故事！</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const DEFAULT_COVER = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx';
+
+            let _pendingDeleteId = null;
+
+            function showToast(msg, duration = 2500) {
+                const t = document.getElementById('toast');
+                t.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), duration);
+            }
+
+            function deleteBook(bookId, e) {
+                e.stopPropagation();
+                _pendingDeleteId = bookId;
+                document.getElementById('deleteModal').classList.add('active');
+            }
+
+            function closeDeleteModal() {
+                document.getElementById('deleteModal').classList.remove('active');
+                _pendingDeleteId = null;
+            }
+
+            async function confirmDelete() {
+                if (!_pendingDeleteId) return;
+                const bookId = _pendingDeleteId;
+                const btn = document.getElementById('deleteConfirmBtn');
+                btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> 删除中...';
+                btn.disabled = true;
+                try {
+                    const resp = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
+                    closeDeleteModal();
+                    if (resp.ok) {
+                        showToast('✅ 绘本已删除');
+                    } else {
+                        const data = await resp.json().catch(() => ({}));
+                        showToast('❌ 删除失败: ' + (data.error || '未知错误'));
+                    }
+                    loadBooks();
+                } catch (err) {
+                    closeDeleteModal();
+                    showToast('❌ 删除失败: ' + err.message);
+                } finally {
+                    btn.innerHTML = '<span class="material-symbols-outlined text-lg">delete</span> 删除';
+                    btn.disabled = false;
+                }
+            }
+
+            async function loadBooks() {
+                const shelf = document.getElementById('bookshelf');
+                const newCard = document.getElementById('new-book-card');
+                // ★ Clear all existing book cards (fix duplication)
+                shelf.querySelectorAll('.book-card-item').forEach(e => e.remove());
+                shelf.querySelectorAll('.animate-pulse').forEach(e => e.remove());
+
+                try {
+                    const resp = await fetch('/api/books');
+                    const { books } = await resp.json();
+                    document.getElementById('book-count').textContent = `${books.length} 本故事`;
+
+                    books.forEach(book => {
+                        const coverImg = (book.pages && book.pages.length > 0 && book.pages[0].imageUrl)
+                            ? book.pages[0].imageUrl : DEFAULT_COVER;
+                        const isGenerating = book.status !== 'complete' && book.status !== 'error';
+                        const statusBadge = isGenerating
+                            ? `<div class="absolute top-3 left-3 bg-yellow-400/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-yellow-900 animate-pulse">⏳ ${book.statusMessage || '生成中...'}</div>`
+                            : book.status === 'error'
+                                ? `<div class="absolute top-3 left-3 bg-red-400/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-white">❌ 失败</div>`
+                                : '';
+
+                        const card = document.createElement('div');
+                        card.className = 'book-card book-card-item bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(11,30,36,0.08)] cursor-pointer group relative';
+                        card.onclick = () => {
+                            if (book.status === 'complete') {
+                                sessionStorage.setItem('currentBook', JSON.stringify(book));
+                                location.href = '/reader';
+                            } else {
+                                location.href = '/create?bookId=' + book.bookId;
+                            }
+                        };
+                        card.innerHTML = `
+                        <div class="aspect-[4/3] bg-primary-container relative overflow-hidden">
+                            <img src="${coverImg}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${book.title}" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-on-surface/25 to-transparent"></div>
+                            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary">${book.pageCount || '?'} 页</div>
+                            ${statusBadge}
+                            <div class="absolute bottom-3 left-3 flex gap-1">
+                                <span class="bg-white/90 backdrop-blur px-2 py-1 rounded-full text-xs font-bold text-primary">${book.theme || ''}</span>
+                                <span class="bg-white/90 backdrop-blur px-2 py-1 rounded-full text-xs font-bold text-tertiary">${book.style || ''}</span>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <h3 class="text-xl font-black text-on-surface mb-1">${book.title}</h3>
+                            <p class="text-on-surface-variant text-sm mb-3 line-clamp-2">${book.summary || book.statusMessage || ''}</p>
+                            <div class="flex items-center justify-between">
+                                ${isGenerating
+                                ? `<div class="flex items-center gap-2"><div class="h-2 w-20 bg-primary-container rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full transition-all" style="width:${Math.round((book.progress || 0) / ((book.totalPages || 10) + 2) * 100)}%"></div></div><span class="text-xs text-on-surface-variant">${book.progress || 0}/${(book.totalPages || '?')}</span></div>`
+                                : `<span class="text-xs text-secondary font-bold">✅ 已完成</span>`
+                            }
+                                <div class="flex items-center gap-1">
+                                    ${book.status === 'complete' ? `<button onclick="event.stopPropagation(); location.href='/edit?bookId=${book.bookId}'" title="编辑" class="p-1.5 rounded-full hover:bg-primary-container text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>` : ''}
+                                    <button onclick="deleteBook('${book.bookId}', event)" title="删除" class="p-1.5 rounded-full hover:bg-red-100 text-on-surface-variant hover:text-red-600 transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
+                                </div>
+                            </div>
+                        </div>`;
+                        shelf.insertBefore(card, newCard);
+                    });
+
+                    if (books.some(b => b.status !== 'complete' && b.status !== 'error')) {
+                        setTimeout(loadBooks, 5000);
+                    }
+                } catch (err) {
+                    console.error('Failed to load books:', err);
+                    document.getElementById('book-count').textContent = '加载失败';
+                }
+            }
+            loadBooks();
+        </script>
+    </section>
+
+    <!-- Feature Highlights -->
+    <section class="py-12 px-6 max-w-6xl mx-auto pb-24">
+        <div class="bg-surface-container-lowest rounded-xl p-10 md:p-14 shadow-[0_32px_32px_-12px_rgba(11,30,36,0.06)]">
+            <h2 class="text-3xl font-black text-on-surface text-center mb-12">魔法工坊的能力</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="flex flex-col items-center text-center gap-4">
+                    <div class="w-16 h-16 bg-primary-container rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-3xl text-primary"
+                            style="font-variation-settings:'FILL' 1;">auto_stories</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-on-surface">AI 魔法生成</h3>
+                    <p class="text-on-surface-variant">输入你的想法，AI 自动创作完整故事和精美插画</p>
+                </div>
+                <div class="flex flex-col items-center text-center gap-4">
+                    <div class="w-16 h-16 bg-secondary-container rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-3xl text-secondary"
+                            style="font-variation-settings:'FILL' 1;">palette</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-on-surface">多种画面风格</h3>
+                    <p class="text-on-surface-variant">3D 动画、水彩、蜡笔、剪纸、黏土、水墨，多种风格随心选</p>
+                </div>
+                <div class="flex flex-col items-center text-center gap-4">
+                    <div class="w-16 h-16 bg-tertiary-container rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-3xl text-tertiary"
+                            style="font-variation-settings:'FILL' 1;">volume_up</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-on-surface">有声朗读</h3>
+                    <p class="text-on-surface-variant">生动配音让故事栩栩如生，沉浸感十足</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay" onclick="if(event.target===this)closeDeleteModal()">
+        <div class="modal-box">
+            <div class="flex flex-col items-center text-center gap-3">
+                <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-1">
+                    <span class="material-symbols-outlined text-3xl text-red-500">delete_forever</span>
+                </div>
+                <h3 class="text-xl font-black text-on-surface">确认删除</h3>
+                <p class="text-on-surface-variant text-sm" id="deleteModalMsg">确定要删除这本绘本吗？删除后不可恢复。</p>
+                <div class="flex gap-3 mt-4 w-full">
+                    <button onclick="closeDeleteModal()"
+                        class="flex-1 px-5 py-2.5 rounded-full border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container-low transition-colors">取消</button>
+                    <button id="deleteConfirmBtn" onclick="confirmDelete()"
+                        class="flex-1 px-5 py-2.5 rounded-full bg-red-500 text-white font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">delete</span> 删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ Chatbot (driven by the ADK agent over its HTTP /run API) -->
+    <button id="chat-fab" onclick="toggleChat()" title="和魔法助手对话创作"
+        class="fixed bottom-6 right-6 z-[120] w-16 h-16 rounded-full bg-primary-container text-on-primary-container shadow-[0_16px_32px_-8px_rgba(112,93,0,0.35)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1;">forum</span>
+    </button>
+
+    <div id="chat-panel"
+        class="fixed bottom-24 right-6 z-[120] w-[92vw] max-w-[400px] h-[70vh] max-h-[560px] bg-surface-container-lowest rounded-xl shadow-[0_32px_64px_-12px_rgba(11,30,36,0.25)] flex-col overflow-hidden hidden">
+        <!-- Header -->
+        <div class="flex items-center gap-3 px-5 py-4 bg-primary-container">
+            <span class="material-symbols-outlined text-2xl text-on-primary-container"
+                style="font-variation-settings:'FILL' 1;">auto_awesome</span>
+            <div class="flex-1">
+                <div class="font-black text-on-primary-container leading-tight">魔法创作助手</div>
+                <div class="text-xs text-on-primary-container/70">用对话创作你的绘本</div>
+            </div>
+            <button onclick="toggleChat()" class="p-1 rounded-full hover:bg-white/30 text-on-primary-container">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <!-- Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-surface-container-low"></div>
+        <!-- Input -->
+        <div class="p-3 bg-surface-container-lowest border-t border-outline-variant/20">
+            <div class="flex items-end gap-2">
+                <textarea id="chat-input" rows="1" placeholder="例如：帮我做一本关于友谊的水彩绘本"
+                    class="flex-1 resize-none rounded-full px-4 py-2.5 bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim max-h-28"></textarea>
+                <button id="chat-send" onclick="sendChat()"
+                    class="w-11 h-11 flex-shrink-0 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+                    <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">send</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Chatbot: talks to the ADK agent via the HTTP API (get_fast_api_app) ──
+        const CHAT_APP = 'app';
+        let _chatUser = localStorage.getItem('msb_uid');
+        if (!_chatUser) { _chatUser = 'web_' + Math.random().toString(36).slice(2, 10); localStorage.setItem('msb_uid', _chatUser); }
+        let _chatSession = null;
+        let _chatReady = false;
+        let _chatBusy = false;
+
+        function toggleChat() {
+            const panel = document.getElementById('chat-panel');
+            const open = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !open);
+            panel.classList.toggle('flex', open);
+            if (open) {
+                ensureChatSession();
+                document.getElementById('chat-input').focus();
+            }
+        }
+
+        function addMsg(role, html) {
+            const box = document.getElementById('chat-messages');
+            const wrap = document.createElement('div');
+            wrap.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+            const bubble = document.createElement('div');
+            bubble.className = role === 'user'
+                ? 'max-w-[80%] bg-primary-container text-on-primary-container rounded-2xl rounded-br-sm px-4 py-2.5 text-sm'
+                : 'max-w-[85%] bg-surface-container-lowest text-on-surface rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm shadow-sm';
+            bubble.innerHTML = html;
+            wrap.appendChild(bubble);
+            box.appendChild(wrap);
+            box.scrollTop = box.scrollHeight;
+            return bubble;
+        }
+
+        function renderText(text) {
+            // Escape, then linkify markdown [text](url) and bare URLs.
+            let s = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+                '<a href="$2" target="_blank" class="text-primary font-bold underline">$1</a>');
+            s = s.replace(/(^|[^"])(https?:\/\/[^\s<]+)/g,
+                '$1<a href="$2" target="_blank" class="text-primary font-bold underline">$2</a>');
+            return s.replace(/\n/g, '<br>');
+        }
+
+        async function ensureChatSession() {
+            if (_chatReady) return;
+            _chatSession = 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            try {
+                await fetch(`/apps/${CHAT_APP}/users/${_chatUser}/sessions/${_chatSession}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+                });
+                _chatReady = true;
+                addMsg('bot', renderText('你好！我是魔法创作助手 ✨ 告诉我你想要的绘本（书名、主题、画风等），我来帮你创作。'));
+            } catch (err) {
+                addMsg('bot', '⚠️ 助手连接失败，请稍后再试。');
+            }
+        }
+
+        function setBusy(b) {
+            _chatBusy = b;
+            document.getElementById('chat-send').disabled = b;
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text || _chatBusy) return;
+            await ensureChatSession();
+            if (!_chatReady) return;
+            input.value = '';
+            addMsg('user', renderText(text));
+            setBusy(true);
+            const thinking = addMsg('bot', '<span class="inline-flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 创作中…</span>');
+            try {
+                const resp = await fetch('/run', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        appName: CHAT_APP, userId: _chatUser, sessionId: _chatSession,
+                        newMessage: { role: 'user', parts: [{ text }] }
+                    })
+                });
+                const events = await resp.json();
+                let reply = '';
+                if (Array.isArray(events)) {
+                    for (const ev of events) {
+                        const parts = (ev && ev.content && ev.content.parts) || [];
+                        for (const p of parts) { if (p.text) reply = p.text; }
+                    }
+                }
+                thinking.innerHTML = renderText(reply || '（没有收到回复）');
+                // A book may have just been created — refresh the shelf.
+                if (typeof loadBooks === 'function') loadBooks();
+            } catch (err) {
+                thinking.innerHTML = '⚠️ 出错了：' + (err.message || err);
+            } finally {
+                setBusy(false);
+                document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+            }
+        }
+
+        // Enter to send (Shift+Enter = newline); auto-grow textarea.
+        document.getElementById('chat-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+        });
+        document.getElementById('chat-input').addEventListener('input', function () {
+            this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 112) + 'px';
+        });
+    </script>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Footer -->
+    <footer class="w-full py-10 px-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-sky-50">
+        <div class="text-lg font-bold text-yellow-700">✨ 魔法绘本</div>
+        <div class="flex gap-6">
+            <a class="text-slate-500 text-sm font-medium hover:text-yellow-600 underline" href="#">账号设置</a>
+            <a class="text-slate-500 text-sm font-medium hover:text-yellow-600 underline" href="#">隐私政策</a>
+        </div>
+        <div class="text-sm text-slate-500">© 2026 魔法绘本. 保留所有权利。</div>
+    </footer>
+
+</body>
+
+</html>

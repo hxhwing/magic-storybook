@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>绘本阅读器 - 魔法绘本</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Be+Vietnam+Pro:wght@400;500;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#d2e6ef",
+                        "secondary": "#006e1c",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#e0f4fd",
+                        "tertiary-fixed": "#ffdcbe",
+                        "outline-variant": "#d2c6a1",
+                        "on-primary-fixed-variant": "#544600",
+                        "surface": "#f2fbff",
+                        "surface-bright": "#f2fbff",
+                        "inverse-surface": "#21333a",
+                        "primary-container": "#ffe16d",
+                        "surface-dim": "#c9dde6",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#ffdcbe",
+                        "surface-tint": "#705d00",
+                        "background": "#f2fbff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-tertiary-fixed": "#2c1600",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#94f990",
+                        "inverse-primary": "#e9c400",
+                        "primary-fixed": "#ffe16d",
+                        "on-secondary-container": "#005313",
+                        "on-surface": "#0b1e24",
+                        "surface-container-low": "#e4f7ff",
+                        "secondary-fixed-dim": "#78dc77",
+                        "tertiary-fixed-dim": "#ffb870",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "outline": "#807757",
+                        "error": "#ba1a1a",
+                        "on-background": "#0b1e24",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#221b00",
+                        "tertiary": "#8b5000",
+                        "on-tertiary-container": "#693c00",
+                        "primary-fixed-dim": "#e9c400",
+                        "secondary-container": "#94f990",
+                        "primary": "#705d00",
+                        "on-surface-variant": "#4e462a",
+                        "surface-container-high": "#d7ebf4",
+                        "on-primary-container": "#544600",
+                        "surface-variant": "#d2e6ef",
+                        "on-secondary-fixed": "#002204",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ddf1fa"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"],
+                        "body": ["Be Vietnam Pro", "Noto Sans SC", "sans-serif"],
+                        "label": ["Plus Jakarta Sans", "Noto Sans SC", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', 'Noto Sans SC', sans-serif;
+            background-color: #f2fbff;
+            overflow: hidden;
+        }
+
+        .text-shadow-sm {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Page transition */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .page-enter {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* ── Mobile-first responsive fixes ── */
+
+        /* Use dvh (dynamic viewport height) with fallback for mobile browsers */
+        body {
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* Safe area insets for notched phones */
+        .safe-top {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-left {
+            padding-left: env(safe-area-inset-left, 0px);
+        }
+
+        .safe-right {
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+
+        /* Mobile text panel */
+        .story-text-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+            padding: 3rem 1.25rem 1.5rem;
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+            color: white;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .story-text-panel .story-title {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            line-height: 1.3;
+        }
+
+        .story-text-panel .story-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            margin-bottom: 0.35rem;
+        }
+
+        .story-text-panel .story-hint {
+            font-size: 0.8rem;
+            opacity: 0.85;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* Desktop: larger text panel */
+        @media (min-width: 768px) {
+            .story-text-panel {
+                padding: 4rem 3rem 2rem;
+            }
+
+            .story-text-panel .story-title {
+                font-size: 1.5rem;
+            }
+
+            .story-text-panel .story-text {
+                font-size: 1.15rem;
+            }
+
+            .story-text-panel .story-hint {
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Landscape phone: side-by-side layout */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .story-text-panel {
+                width: 40%;
+                left: auto;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                background: linear-gradient(to left, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 1rem 1.25rem 1rem 2.5rem;
+            }
+
+            .story-text-panel .story-title {
+                font-size: 1rem;
+            }
+
+            .story-text-panel .story-text {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Music button spinning animation */
+        @keyframes musicSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #music-btn.playing #music-ring {
+            border-color: rgba(112, 93, 0, 0.5);
+            border-top-color: transparent;
+            animation: musicSpin 1.5s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface w-screen overflow-hidden flex flex-col"
+    style="height: 100vh; height: 100dvh;">
+
+    <!-- Subtle Reader Shell Header (Minimized) -->
+    <header
+        class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-3 py-2 md:px-6 md:py-3 pointer-events-none safe-top safe-left safe-right">
+        <a href="/"
+            class="pointer-events-auto bg-surface/80 backdrop-blur-xl p-1.5 md:p-2.5 rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all duration-300 group"
+            title="关闭阅读器">
+            <span class="material-symbols-outlined text-primary text-lg md:text-xl block">close</span>
+        </a>
+        <!-- Music button + lyrics (center of header) -->
+        <div id="music-container" class="hidden flex flex-col items-center gap-0.5 pointer-events-none">
+            <button id="music-btn" class="pointer-events-auto" onclick="toggleMusic()" title="播放主题曲">
+                <div
+                    class="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-surface/80 backdrop-blur-xl rounded-lg shadow-md text-primary hover:scale-105 active:scale-95 transition-all duration-300">
+                    <span id="music-icon" class="material-symbols-outlined text-lg md:text-xl"
+                        style="font-variation-settings: 'FILL' 1;">music_note</span>
+                    <div id="music-ring"
+                        class="absolute inset-0 rounded-lg border-2 border-transparent pointer-events-none"></div>
+                </div>
+            </button>
+            <div id="lyrics-bubble"
+                class="hidden text-white text-xs md:text-sm whitespace-nowrap max-w-[60vw] overflow-hidden text-ellipsis transition-all duration-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+                <span id="lyrics-text">♪</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 md:gap-2">
+            <button
+                class="pointer-events-auto bg-surface/80 backdrop-blur-xl p-1.5 md:p-2.5 rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all duration-300"
+                title="朗读" onclick="toggleRead()">
+                <span id="read-icon" class="material-symbols-outlined text-primary text-lg md:text-xl">volume_up</span>
+            </button>
+            <button
+                class="pointer-events-auto bg-surface/80 backdrop-blur-xl p-1.5 md:p-2.5 rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all duration-300"
+                title="全屏" onclick="toggleFullscreen()">
+                <span id="fullscreen-icon"
+                    class="material-symbols-outlined text-primary text-lg md:text-xl">fullscreen</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Story Canvas -->
+    <main id="story-canvas" class="relative flex-1 w-full h-full overflow-hidden page-enter">
+        <!-- Full Bleed Illustration -->
+        <div class="absolute inset-0 z-0">
+            <img id="page-illustration" alt="故事插图" class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx" />
+            <!-- Tonal Overlay to ensure text legibility -->
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-on-surface/30"></div>
+        </div>
+
+
+        <!-- Story Text Overlay Panel -->
+        <div id="story-text-panel" class="story-text-panel">
+            <div id="story-panel-title" class="story-title"></div>
+            <div id="story-panel-text" class="story-text"></div>
+            <div id="story-panel-hint" class="story-hint">
+                <span class="material-symbols-outlined" style="font-size: 1em;">lightbulb</span>
+                <span id="story-panel-hint-text"></span>
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <nav
+            class="absolute inset-y-0 left-0 right-0 flex justify-between items-center px-2 md:px-8 z-30 pointer-events-none safe-left safe-right">
+            <!-- Previous Button -->
+            <button id="prev-btn"
+                class="pointer-events-auto w-9 h-9 md:w-14 md:h-14 flex items-center justify-center bg-surface-container-highest/60 backdrop-blur-md rounded-full text-primary shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 opacity-50 cursor-not-allowed"
+                title="上一页" onclick="prevPage()" disabled>
+                <span class="material-symbols-outlined text-lg md:text-2xl">arrow_back_ios_new</span>
+            </button>
+            <!-- Next Button -->
+            <button id="next-btn"
+                class="pointer-events-auto w-10 h-10 md:w-16 md:h-16 flex items-center justify-center bg-primary-container text-on-primary-container rounded-full shadow-[0_8px_16px_-4px_rgba(112,93,0,0.3)] hover:scale-110 hover:bg-primary-fixed-dim active:scale-90 transition-all duration-300"
+                title="下一页" onclick="nextPage()">
+                <span class="material-symbols-outlined text-xl md:text-3xl"
+                    style="font-variation-settings: 'FILL' 1;">arrow_forward_ios</span>
+            </button>
+        </nav>
+
+        <!-- Page Indicator & Video Button (bottom right) -->
+        <div
+            class="absolute bottom-3 right-3 md:bottom-5 md:right-5 z-40 safe-right safe-bottom flex items-center gap-2">
+            <!-- Video play button (shown only when video exists) -->
+            <button id="video-play-btn"
+                class="pointer-events-auto hidden w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-white/40 backdrop-blur-md rounded-full text-white hover:bg-white/60 hover:scale-110 active:scale-95 transition-all duration-300 drop-shadow-md"
+                title="播放动画" onclick="playVideo()">
+                <span class="material-symbols-outlined text-lg md:text-xl"
+                    style="font-variation-settings: 'FILL' 1;">play_circle</span>
+            </button>
+            <!-- Video generating indicator -->
+            <div id="video-loading-badge"
+                class="pointer-events-none hidden bg-white/30 backdrop-blur-md px-2 py-1 rounded-full text-white text-xs font-bold drop-shadow-md animate-pulse">
+                🎬 生成中
+            </div>
+            <span id="page-indicator"
+                class="pointer-events-none bg-white/30 backdrop-blur-md px-3 py-1.5 md:px-4 md:py-2 rounded-full font-headline font-bold text-white text-xs md:text-sm drop-shadow-md">第
+                1 / 10 页</span>
+        </div>
+    </main>
+
+    <!-- Video Overlay -->
+    <div id="video-overlay"
+        class="fixed inset-0 z-[100] hidden bg-black/90 backdrop-blur-lg flex-col items-center justify-center"
+        onclick="closeVideo(event)">
+        <button
+            class="absolute top-4 right-4 z-[110] bg-white/20 backdrop-blur p-2 rounded-full text-white hover:bg-white/40 hover:scale-110 active:scale-95 transition-all safe-top safe-right"
+            onclick="closeVideo(event)" title="关闭视频">
+            <span class="material-symbols-outlined text-2xl">close</span>
+        </button>
+        <video id="video-player" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl" controls autoplay playsinline>
+        </video>
+    </div>
+
+
+    <script>
+        // ── Demo fallback pages (used when no generated book is available) ──
+        const DEMO_PAGES = [
+            {
+                title: "小星星来到太空啦！",
+                text: "快看，星星在眨眼，月亮圆又亮。",
+                interactiveHint: "你能数出几颗星星？",
+                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx"
+            },
+            {
+                title: "遇见了神秘的星云",
+                text: "五彩的星云像棉花糖，软软的，甜甜的。",
+                interactiveHint: "星云像什么形状？",
+                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE7YWyNBLTPadqaEaRGsxhV-X1aVhrlOp1Ey4Ws8wcyexEed1vzypi1ftCEFvXEfRI6ViVzjwnu6YhjXvAm7BiM-QvlhzRkgGW79abvHWTM5wFYXgsUnWiOpQVdOQ3dJhX5gCP1Ibo0HZ12sclgE40SaqOVxCp6hSwuXH89-jZ2-MbMAOWMXdksnQ8jNoY9JK3sWCogyBmhMhZB2QvF2dl28csX_iMjnOx5UFY_1I_aFkolgscZIQvnhX0p-iF7mhZI_8mJFYj3c8G"
+            },
+            {
+                title: "发现了闪闪发光的恒星",
+                text: "它就在那里！一颗闪闪发光的巨大恒星，闻起来像宇宙蜂蜜的味道。",
+                interactiveHint: "和我一起说：好亮呀！",
+                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE7YWyNBLTPadqaEaRGsxhV-X1aVhrlOp1Ey4Ws8wcyexEed1vzypi1ftCEFvXEfRI6ViVzjwnu6YhjXvAm7BiM-QvlhzRkgGW79abvHWTM5wFYXgsUnWiOpQVdOQ3dJhX5gCP1Ibo0HZ12sclgE40SaqOVxCp6hSwuXH89-jZ2-MbMAOWMXdksnQ8jNoY9JK3sWCogyBmhMhZB2QvF2dl28csX_iMjnOx5UFY_1I_aFkolgscZIQvnhX0p-iF7mhZI_8mJFYj3c8G"
+            },
+            {
+                title: "交到了新朋友",
+                text: "一只小彗星飞了过来，它有着金色的尾巴和温暖的心。",
+                interactiveHint: "你愿意和它做朋友吗？",
+                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx"
+            },
+            {
+                title: "故事结束了，冒险继续！",
+                text: "小星星回到了家，心里装满了快乐。下一次冒险，什么时候出发呢？",
+                interactiveHint: "下次你想去哪里冒险？",
+                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx"
+            }
+        ];
+
+        // ── Load book: use AI-generated data or fallback to demo ──
+        let storyPages = DEMO_PAGES;
+        let bookId = null;
+        const urlBookId = new URLSearchParams(location.search).get('bookId');
+        let bookVideoStatus = null;
+        let bookMusicUrl = null;
+        let bookMusicLyrics = null;
+        const savedBook = sessionStorage.getItem('currentBook');
+        if (savedBook) {
+            try {
+                const book = JSON.parse(savedBook);
+                bookId = book.bookId || book.id || null;
+                bookVideoStatus = book.videoStatus || null;
+                bookMusicUrl = book.musicUrl || null;
+                bookMusicLyrics = book.musicLyrics || null;
+                if (book.pages && book.pages.length > 0) {
+                    storyPages = book.pages.map(p => ({
+                        title: p.title,
+                        text: p.text,
+                        interactiveHint: p.interactiveHint || '',
+                        img: p.imageUrl || DEMO_PAGES[0].img,
+                        videoUrl: p.videoUrl || '',
+                        audioUrl: p.audioUrl || '',
+                    }));
+                    // Update book title in page if available
+                    document.title = `${book.title} - 魔法绘本`;
+                }
+            } catch (e) {
+                console.warn('Failed to load book data from sessionStorage', e);
+            }
+        }
+
+        // A bookId in the URL (e.g. opened from Gemini Enterprise) always wins,
+        // even in a fresh tab with no sessionStorage — we fetch it on init below.
+        if (urlBookId) bookId = urlBookId;
+
+        let currentPage = 0;
+        let totalPages = storyPages.length;
+
+        // Media is served via signed URLs (private bucket) that expire. The API
+        // re-signs on every read, so re-fetch the book to get fresh URLs: on open,
+        // shortly before expiry, and whenever an image/audio fails to load (403).
+        let _refreshing = false;
+        function _signedUrlExpiry(url) {
+            // Parse V4 signed URL: X-Goog-Date (start) + X-Goog-Expires (seconds).
+            try {
+                const u = new URL(url);
+                const d = u.searchParams.get('X-Goog-Date');
+                const exp = parseInt(u.searchParams.get('X-Goog-Expires') || '0', 10);
+                if (!d || !exp) return 0;
+                const t = Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8),
+                    +d.slice(9, 11), +d.slice(11, 13), +d.slice(13, 15));
+                return t + exp * 1000;
+            } catch { return 0; }
+        }
+        async function refreshBook() {
+            if (!bookId || _refreshing) return;
+            _refreshing = true;
+            try {
+                const resp = await fetch(`/api/books/${bookId}`);
+                if (!resp.ok) return;
+                const { book } = await resp.json();
+                if (!book || !(book.pages && book.pages.length)) return;
+                bookVideoStatus = book.videoStatus || bookVideoStatus;
+                bookMusicLyrics = book.musicLyrics || bookMusicLyrics;
+                storyPages = book.pages.map(p => ({
+                    title: p.title, text: p.text, interactiveHint: p.interactiveHint || '',
+                    img: p.imageUrl || DEMO_PAGES[0].img, videoUrl: p.videoUrl || '',
+                    audioUrl: p.audioUrl || '',
+                }));
+                totalPages = storyPages.length;
+                if (book.title) document.title = `${book.title} - 魔法绘本`;
+                if (currentPage >= totalPages) currentPage = totalPages - 1;
+                // Refresh the currently shown illustration + music src (no autoplay restart).
+                const cur = storyPages[currentPage];
+                if (cur) document.getElementById('page-illustration').src = cur.img;
+                if (book.musicUrl) { bookMusicUrl = book.musicUrl; if (musicPlayer.paused) musicPlayer.src = book.musicUrl; }
+                if (typeof updateVideoButton === 'function') updateVideoButton();
+                sessionStorage.setItem('currentBook', JSON.stringify(book));
+            } catch (e) { console.warn('[Reader] refreshBook failed', e); }
+            finally { _refreshing = false; }
+        }
+        function _maybeRefreshBeforeExpiry() {
+            const cur = storyPages[currentPage];
+            if (!cur || !cur.img) return;
+            const exp = _signedUrlExpiry(cur.img);
+            if (exp && exp - Date.now() < 10 * 60 * 1000) refreshBook(); // <10 min left
+        }
+
+        function updatePage() {
+            _maybeRefreshBeforeExpiry();   // re-sign fresh URLs if this page's are near expiry
+            const page = storyPages[currentPage];
+            const canvas = document.getElementById('story-canvas');
+
+            // Animate transition
+            canvas.classList.remove('page-enter');
+            void canvas.offsetWidth; // reflow
+            canvas.classList.add('page-enter');
+
+            document.getElementById('page-illustration').src = page.img;
+
+            // Update story text panel
+            document.getElementById('story-panel-title').textContent = page.title || '';
+            document.getElementById('story-panel-text').textContent = page.text || '';
+            const hintEl = document.getElementById('story-panel-hint');
+            const hintTextEl = document.getElementById('story-panel-hint-text');
+            if (page.interactiveHint) {
+                hintTextEl.textContent = page.interactiveHint;
+                hintEl.style.display = 'flex';
+            } else {
+                hintEl.style.display = 'none';
+            }
+
+            // Update indicator
+            document.getElementById('page-indicator').textContent = `第 ${currentPage + 1} / ${totalPages} 页`;
+
+            // Update prev button
+            const prevBtn = document.getElementById('prev-btn');
+            if (currentPage === 0) {
+                prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                prevBtn.disabled = false;
+            }
+
+            // Update next button - on last page show "完成" style
+            const nextBtn = document.getElementById('next-btn');
+            if (currentPage === totalPages - 1) {
+                nextBtn.innerHTML = `<span class="material-symbols-outlined text-xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>`;
+                nextBtn.onclick = () => { window.location.href = '/'; };
+            } else {
+                nextBtn.innerHTML = `<span class="material-symbols-outlined text-xl md:text-3xl" style="font-variation-settings: 'FILL' 1;">arrow_forward_ios</span>`;
+                nextBtn.onclick = nextPage;
+            }
+
+            // Stop any playing narration, then auto-play this page's narration once
+            stopNarration();
+            playNarration();
+
+            // Update video button state
+            updateVideoButton();
+
+            // Save current page
+            sessionStorage.setItem('readerPage', currentPage);
+        }
+
+        // ── Video playback ──────────────────────────────────────
+        function updateVideoButton() {
+            const page = storyPages[currentPage];
+            const playBtn = document.getElementById('video-play-btn');
+            const loadingBadge = document.getElementById('video-loading-badge');
+
+            if (page.videoUrl) {
+                // Video is ready — show play button, hide loading
+                playBtn.classList.remove('hidden');
+                loadingBadge.classList.add('hidden');
+            } else if (bookVideoStatus === 'generating') {
+                // Video is still generating — show loading badge, hide play
+                playBtn.classList.add('hidden');
+                loadingBadge.classList.remove('hidden');
+            } else {
+                // No video and not generating
+                playBtn.classList.add('hidden');
+                loadingBadge.classList.add('hidden');
+            }
+        }
+
+        function playVideo() {
+            const page = storyPages[currentPage];
+            if (!page.videoUrl) return;
+
+            const overlay = document.getElementById('video-overlay');
+            const player = document.getElementById('video-player');
+            player.src = page.videoUrl;
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+            player.play().catch(() => { });
+        }
+
+        function closeVideo(e) {
+            // Only close if clicking on the overlay background or the close button
+            if (e && e.target.closest('#video-player')) return;
+            const overlay = document.getElementById('video-overlay');
+            const player = document.getElementById('video-player');
+            player.pause();
+            player.src = '';
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
+        }
+
+        // Close video on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('video-overlay');
+                if (!overlay.classList.contains('hidden')) closeVideo(e);
+            }
+        });
+
+        // ── Poll for video updates (when videos are still generating) ──
+        let videoPollTimer = null;
+        function startVideoPolling() {
+            if (!bookId || bookVideoStatus === 'complete') return;
+            console.log('[Reader] Starting video poll for bookId:', bookId);
+            videoPollTimer = setInterval(pollVideos, 20000); // check every 20s
+            pollVideos(); // immediate first check
+        }
+
+        async function pollVideos() {
+            if (!bookId) return;
+            try {
+                const resp = await fetch(`/api/books/${bookId}`);
+                const { book } = await resp.json();
+                if (!book || !book.pages) return;
+
+                bookVideoStatus = book.videoStatus || null;
+                let hasNewVideos = false;
+
+                // Update videoUrls for all pages
+                book.pages.forEach((p, i) => {
+                    if (p.videoUrl && storyPages[i] && !storyPages[i].videoUrl) {
+                        storyPages[i].videoUrl = p.videoUrl;
+                        hasNewVideos = true;
+                        console.log(`[Reader] 🎬 Video ready for page ${i + 1}`);
+                    }
+                });
+
+                // Refresh current page video button if new videos arrived
+                if (hasNewVideos) updateVideoButton();
+
+                // Update sessionStorage with latest data
+                sessionStorage.setItem('currentBook', JSON.stringify(book));
+
+                // Stop polling when all videos are done
+                if (bookVideoStatus === 'complete' || bookVideoStatus === 'error') {
+                    console.log('[Reader] Video generation finished, stopping poll');
+                    clearInterval(videoPollTimer);
+                    videoPollTimer = null;
+                }
+            } catch (err) {
+                console.warn('[Reader] Video poll error:', err.message);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                updatePage();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                updatePage();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextPage();
+            if (e.key === 'ArrowLeft') prevPage();
+        });
+
+        // ── Audio narration (GENERATED TTS ONLY — no browser fallback) ──
+        // Behaviour: turning to a page auto-plays its generated narration once.
+        // The icon lets the user stop or replay. If a page has no generated
+        // audio, nothing plays (we never fall back to the browser voice).
+        let isPlaying = false;
+        let audioPlayer = new Audio();
+        audioPlayer.addEventListener('ended', () => {
+            isPlaying = false;
+            const icon = document.getElementById('read-icon');
+            if (icon) icon.textContent = 'volume_up';
+        });
+
+        function stopNarration() {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            isPlaying = false;
+            const icon = document.getElementById('read-icon');
+            if (icon) icon.textContent = 'volume_up';
+        }
+
+        function playNarration() {
+            const page = storyPages[currentPage];
+            const icon = document.getElementById('read-icon');
+            // Generated TTS only — do nothing if this page has no generated audio.
+            if (!page || !page.audioUrl) {
+                if (icon) icon.textContent = 'volume_up';
+                return;
+            }
+            audioPlayer.src = page.audioUrl;
+            audioPlayer.currentTime = 0;
+            audioPlayer.play().then(() => {
+                isPlaying = true;
+                if (icon) icon.textContent = 'volume_off';
+            }).catch(() => {
+                // Autoplay can be blocked before the first user gesture; the
+                // icon stays available so the user can start playback manually.
+                isPlaying = false;
+                if (icon) icon.textContent = 'volume_up';
+            });
+        }
+
+        // Icon click: stop if playing, otherwise (re)play this page's narration.
+        function toggleRead() {
+            if (isPlaying) stopNarration();
+            else playNarration();
+        }
+
+        // Browsers block audio autoplay before a user gesture, so narration
+        // stays silent when the reader first loads. Arm a one-time unlock: on
+        // the first interaction, start the current page's narration. After that
+        // the audio is "unlocked" and every page turn auto-plays normally.
+        let _audioUnlocked = false;
+        function unlockAudio() {
+            if (_audioUnlocked) return;
+            _audioUnlocked = true;
+            if (!isPlaying) playNarration();
+        }
+        ['click', 'keydown', 'touchend'].forEach(ev =>
+            document.addEventListener(ev, unlockAudio, { once: true }));
+
+        // Recover from expired signed URLs (403): re-fetch fresh URLs and retry.
+        document.getElementById('page-illustration').addEventListener('error', async () => {
+            await refreshBook();
+            const cur = storyPages[currentPage];
+            if (cur && cur.img) document.getElementById('page-illustration').src = cur.img;
+        });
+        audioPlayer.addEventListener('error', () => { refreshBook(); });
+
+        // Touch swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) { diff > 0 ? nextPage() : prevPage(); }
+        }, { passive: true });
+
+        // ── Background music player with LRC sync ──────────────────
+        const musicPlayer = new Audio();
+        musicPlayer.loop = true;
+        musicPlayer.volume = 0.4;
+        let isMusicPlaying = false;
+        let lrcLines = []; // [{time: seconds, text: string}]
+        let lrcTimer = null;
+
+        // Parse LRC format: "[mm:ss.xx] lyrics text"
+        function parseLRC(lrcText) {
+            if (!lrcText) return [];
+            return lrcText.split('\n').map(line => {
+                const m = line.match(/^\[(\d+):(\d+\.?\d*)\]\s*(.+)$/);
+                if (!m) return null;
+                return { time: parseInt(m[1]) * 60 + parseFloat(m[2]), text: m[3].trim() };
+            }).filter(Boolean).sort((a, b) => a.time - b.time);
+        }
+
+        function initMusicButton() {
+            const container = document.getElementById('music-container');
+            if (bookMusicUrl) {
+                musicPlayer.src = bookMusicUrl;
+                container.classList.remove('hidden');
+                if (bookMusicLyrics) {
+                    lrcLines = parseLRC(bookMusicLyrics);
+                    console.log(`[Reader] 🎵 Parsed ${lrcLines.length} LRC lines`);
+                }
+                console.log('[Reader] 🎵 Music available:', bookMusicUrl);
+            }
+        }
+
+        function getCurrentLyric(currentTime) {
+            if (!lrcLines.length) return null;
+            let current = lrcLines[0];
+            for (const line of lrcLines) {
+                if (line.time <= currentTime) current = line;
+                else break;
+            }
+            return current;
+        }
+
+        function startLrcSync() {
+            if (lrcTimer) return;
+            const bubble = document.getElementById('lyrics-bubble');
+            const textEl = document.getElementById('lyrics-text');
+            if (lrcLines.length > 0) bubble.classList.remove('hidden');
+            let lastText = '';
+            lrcTimer = setInterval(() => {
+                const lyric = getCurrentLyric(musicPlayer.currentTime);
+                if (lyric && lyric.text !== lastText) {
+                    textEl.textContent = lyric.text;
+                    lastText = lyric.text;
+                }
+            }, 200);
+        }
+
+        function stopLrcSync() {
+            if (lrcTimer) { clearInterval(lrcTimer); lrcTimer = null; }
+            document.getElementById('lyrics-bubble').classList.add('hidden');
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('music-btn');
+            const icon = document.getElementById('music-icon');
+
+            if (isMusicPlaying) {
+                musicPlayer.pause();
+                isMusicPlaying = false;
+                btn.classList.remove('playing');
+                icon.textContent = 'music_note';
+                stopLrcSync();
+            } else {
+                musicPlayer.play().then(() => {
+                    isMusicPlaying = true;
+                    btn.classList.add('playing');
+                    icon.textContent = 'music_off';
+                    startLrcSync();
+                }).catch(err => {
+                    console.warn('[Reader] 🎵 Music play failed:', err);
+                });
+            }
+        }
+
+        // Also check for musicUrl during video polling (in case it arrives late)
+        const origPollVideos = pollVideos;
+        pollVideos = async function () {
+            await origPollVideos();
+            if (!bookMusicUrl && bookId) {
+                try {
+                    const saved = sessionStorage.getItem('currentBook');
+                    if (saved) {
+                        const b = JSON.parse(saved);
+                        if (b.musicUrl) {
+                            bookMusicUrl = b.musicUrl;
+                            bookMusicLyrics = b.musicLyrics || null;
+                            initMusicButton();
+                        }
+                    }
+                } catch (_) { }
+            }
+        };
+
+        // ── Fullscreen toggle ──────────────────────────────────────
+        function toggleFullscreen() {
+            const icon = document.getElementById('fullscreen-icon');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                const el = document.documentElement;
+                (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(() => { });
+            } else {
+                (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => { });
+            }
+        }
+
+        // Update icon when fullscreen state changes (including Esc key exit)
+        function onFullscreenChange() {
+            const icon = document.getElementById('fullscreen-icon');
+            icon.textContent = (document.fullscreenElement || document.webkitFullscreenElement)
+                ? 'fullscreen_exit' : 'fullscreen';
+        }
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+        // Keyboard shortcut: F key for fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+        });
+
+        // Initialize
+        (async () => {
+            // Opened via a URL bookId (e.g. Gemini Enterprise link) and no cached
+            // pages yet → fetch the real book so we don't show the demo placeholder.
+            if (urlBookId && storyPages === DEMO_PAGES) {
+                await refreshBook();
+            }
+            updatePage();
+            initMusicButton();
+            startVideoPolling();
+        })();
+    </script>
+
+</body>
+
+</html>

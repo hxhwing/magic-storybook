@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>编辑绘本 - 魔法绘本</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#d2e6ef", "secondary": "#006e1c", "on-secondary": "#ffffff",
+                        "outline-variant": "#d2c6a1", "surface": "#f2fbff", "primary-container": "#ffe16d",
+                        "surface-dim": "#c9dde6", "tertiary-container": "#ffdcbe", "background": "#f2fbff",
+                        "surface-container-lowest": "#ffffff", "on-secondary-container": "#005313",
+                        "on-surface": "#0b1e24", "surface-container-low": "#e4f7ff", "outline": "#807757",
+                        "on-background": "#0b1e24", "on-tertiary": "#ffffff", "tertiary": "#8b5000",
+                        "on-tertiary-container": "#693c00", "primary-fixed-dim": "#e9c400",
+                        "secondary-container": "#94f990", "primary": "#705d00", "on-surface-variant": "#4e462a",
+                        "surface-container-high": "#d7ebf4", "on-primary-container": "#544600",
+                        "on-primary": "#ffffff", "surface-container": "#ddf1fa"
+                    },
+                    fontFamily: { "headline": ["Plus Jakarta Sans"], "body": ["Be Vietnam Pro"] },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .page-thumb {
+            transition: all .2s ease;
+        }
+
+        .page-thumb.active {
+            ring: 4px solid #705d00;
+            transform: scale(1.05);
+        }
+
+        .page-thumb:hover {
+            transform: scale(1.03);
+        }
+
+        .save-flash {
+            animation: flash .6s ease;
+        }
+
+        @keyframes flash {
+
+            0%,
+            100% {
+                background-color: transparent
+            }
+
+            50% {
+                background-color: #94f990
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface min-h-screen">
+
+    <!-- Top Nav -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-sky-50/80 backdrop-blur-xl shadow-[0_32px_32px_-12px_rgba(112,93,0,0.06)]">
+        <a href="/" class="text-2xl font-black text-yellow-700 tracking-tight">✨ 魔法绘本</a>
+        <div class="flex items-center gap-4">
+            <a href="/"
+                class="px-5 py-2 rounded-full font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">返回书架</a>
+            <button onclick="saveAll()" id="save-btn"
+                class="px-6 py-2 bg-secondary text-on-secondary rounded-full font-bold hover:scale-105 transition-all active:scale-95 flex items-center gap-2 shadow-lg">
+                <span class="material-symbols-outlined text-lg">save</span>
+                保存修改
+            </button>
+        </div>
+    </nav>
+
+    <main class="pt-20 md:pt-28 pb-16 px-4 md:px-6 max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-6 md:mb-8">
+            <span class="text-tertiary font-bold tracking-wide uppercase text-xs mb-1 block">编辑模式</span>
+            <h1 id="book-title-display" class="text-2xl md:text-4xl font-extrabold text-on-surface tracking-tight">
+                加载中...</h1>
+            <p id="book-summary" class="text-on-surface-variant mt-2"></p>
+        </div>
+
+        <!-- Loading state -->
+        <div id="loading" class="text-center py-20">
+            <div class="text-6xl mb-4">📖</div>
+            <p class="text-on-surface-variant text-lg">正在加载绘本数据...</p>
+        </div>
+
+        <!-- Editor (hidden until loaded) -->
+        <div id="editor" class="hidden">
+            <!-- Page thumbnails strip -->
+            <div class="mb-8">
+                <h2 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">view_carousel</span>
+                    选择页面
+                </h2>
+                <div id="page-strip" class="flex gap-4 overflow-x-auto pb-4 snap-x"></div>
+            </div>
+
+            <!-- Selected page editor -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <!-- Left: Image preview -->
+                <div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                    <div
+                        class="aspect-[3/4] md:aspect-[4/5] rounded-lg overflow-hidden bg-surface-container-high relative">
+                        <img id="page-image" class="w-full h-full object-cover" src="" alt="页面插画" />
+                        <div id="page-badge"
+                            class="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-full text-primary font-bold text-sm">
+                        </div>
+                    </div>
+                    <!-- Regenerate button -->
+                    <button onclick="regeneratePage()" id="regen-btn"
+                        class="mt-4 w-full py-3 bg-primary text-on-primary rounded-xl font-bold hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg">
+                        <span class="material-symbols-outlined"
+                            style="font-variation-settings:'FILL' 1;">auto_fix_high</span>
+                        重新生成这一页
+                    </button>
+                </div>
+
+                <!-- Right: Edit fields -->
+                <div class="flex flex-col gap-6">
+                    <!-- Title -->
+                    <div
+                        class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                        <label class="flex items-center gap-2 text-sm font-bold text-on-surface-variant mb-2">
+                            <span class="material-symbols-outlined text-primary text-lg">title</span>
+                            页面标题
+                        </label>
+                        <input id="edit-title"
+                            class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-lg font-bold text-on-surface focus:ring-4 focus:ring-primary-container" />
+                    </div>
+
+                    <!-- Story text -->
+                    <div
+                        class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                        <label class="flex items-center gap-2 text-sm font-bold text-on-surface-variant mb-2">
+                            <span class="material-symbols-outlined text-primary text-lg">auto_stories</span>
+                            故事文字 <span class="text-xs font-normal text-on-surface-variant/60">（显示在图片上，建议15字以内）</span>
+                        </label>
+                        <textarea id="edit-text"
+                            class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-lg text-on-surface focus:ring-4 focus:ring-primary-container resize-none"
+                            rows="3"></textarea>
+                        <div class="flex justify-end mt-1">
+                            <span id="text-count" class="text-xs text-on-surface-variant/60"></span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive hint -->
+                    <div
+                        class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                        <label class="flex items-center gap-2 text-sm font-bold text-on-surface-variant mb-2">
+                            <span class="material-symbols-outlined text-tertiary text-lg">emoji_objects</span>
+                            互动提示
+                        </label>
+                        <input id="edit-hint"
+                            class="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-on-surface focus:ring-4 focus:ring-primary-container"
+                            placeholder="例如：你能找到小星星吗？" />
+                    </div>
+
+                    <!-- TTS Prompt (朗读脚本) -->
+                    <details open
+                        class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                        <summary
+                            class="cursor-pointer flex items-center gap-2 text-sm font-bold text-on-surface-variant">
+                            <span class="material-symbols-outlined text-tertiary text-lg">record_voice_over</span>
+                            TTS 朗读脚本 <span class="text-xs font-normal text-on-surface-variant/40">（语音合成用，支持语气标签）</span>
+                        </summary>
+                        <textarea id="edit-tts"
+                            class="mt-3 w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-4 focus:ring-primary-container resize-none"
+                            rows="4"
+                            placeholder="例如：哇！[short pause] 快看快看！[curious] 那是什么呀？[whispering] 是一颗会发光的小星星呢！[laughing]"></textarea>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            <span class="text-xs text-on-surface-variant/50 mr-1">可用标签:</span>
+                            <button type="button" onclick="insertTag('[laughing]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[laughing]</button>
+                            <button type="button" onclick="insertTag('[whispering]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[whispering]</button>
+                            <button type="button" onclick="insertTag('[curious]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[curious]</button>
+                            <button type="button" onclick="insertTag('[scared]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[scared]</button>
+                            <button type="button" onclick="insertTag('[shouting]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[shouting]</button>
+                            <button type="button" onclick="insertTag('[sigh]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[sigh]</button>
+                            <button type="button" onclick="insertTag('[uhm]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-secondary-container text-on-secondary-container rounded-full hover:scale-105 transition-all cursor-pointer">[uhm]</button>
+                            <button type="button" onclick="insertTag('[short pause]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-tertiary-container text-on-tertiary-container rounded-full hover:scale-105 transition-all cursor-pointer">[short
+                                pause]</button>
+                            <button type="button" onclick="insertTag('[medium pause]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-tertiary-container text-on-tertiary-container rounded-full hover:scale-105 transition-all cursor-pointer">[medium
+                                pause]</button>
+                            <button type="button" onclick="insertTag('[long pause]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-tertiary-container text-on-tertiary-container rounded-full hover:scale-105 transition-all cursor-pointer">[long
+                                pause]</button>
+                            <button type="button" onclick="insertTag('[extremely fast]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-surface-container-high text-on-surface-variant rounded-full hover:scale-105 transition-all cursor-pointer">[extremely
+                                fast]</button>
+                            <button type="button" onclick="insertTag('[sarcasm]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-surface-container-high text-on-surface-variant rounded-full hover:scale-105 transition-all cursor-pointer">[sarcasm]</button>
+                            <button type="button" onclick="insertTag('[robotic]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-surface-container-high text-on-surface-variant rounded-full hover:scale-105 transition-all cursor-pointer">[robotic]</button>
+                            <button type="button" onclick="insertTag('[bored]')"
+                                class="tts-tag-btn px-2 py-0.5 text-xs bg-surface-container-high text-on-surface-variant rounded-full hover:scale-105 transition-all cursor-pointer">[bored]</button>
+                        </div>
+                    </details>
+
+                    <!-- Image prompt (collapsed) -->
+                    <details
+                        class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_16px_32px_-8px_rgba(11,30,36,0.06)]">
+                        <summary
+                            class="cursor-pointer flex items-center gap-2 text-sm font-bold text-on-surface-variant">
+                            <span class="material-symbols-outlined text-on-surface-variant text-lg">image</span>
+                            图片提示词 <span class="text-xs font-normal text-on-surface-variant/40">（高级）</span>
+                        </summary>
+                        <textarea id="edit-prompt"
+                            class="mt-3 w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-sm text-on-surface focus:ring-4 focus:ring-primary-container resize-none"
+                            rows="4"></textarea>
+                    </details>
+
+                    <!-- Page nav buttons -->
+                    <div class="flex gap-4">
+                        <button onclick="prevPage()" id="btn-prev"
+                            class="flex-1 py-3 bg-surface-container-high text-on-surface-variant rounded-xl font-bold hover:bg-surface-dim transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">arrow_back</span> 上一页
+                        </button>
+                        <button onclick="nextPage()" id="btn-next"
+                            class="flex-1 py-3 bg-primary-container text-on-primary-container rounded-xl font-bold hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            下一页 <span class="material-symbols-outlined">arrow_forward</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save toast -->
+        <div id="toast"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-secondary text-on-secondary px-8 py-4 rounded-full font-bold shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50">
+            ✅ 修改已保存！
+        </div>
+    </main>
+
+    <script>
+        let book = null;
+        let currentIdx = 0;
+        let hasChanges = false;
+        const DEFAULT_IMG = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDtZz_gX4B7hFtakGoQlq9JuX7vk0lYlx9hwB2roQOLqFtf7GqdUMdeJ1FfKo6hBXWHzGOeQ_rw9LotiizhkdRG-62ZlOs5YcEG45gsBelSwdJGqWLuGyWLS7cPNgQHiQUWDCYJPxM5It1j1mP5cogI7P_WqO5zVIAlAMjNtGE0ZjAn7j6BDrIyx7aUZgL_zHGAjHTwQ-Kc4HsG8mQOKdCRm6mQj5i-gmq_IrWdDGI0-DfYZze2m6P6VjZTQwR9mNrB7Q0IcnwwoZZx';
+
+        // Get bookId from URL or sessionStorage
+        const params = new URLSearchParams(location.search);
+        const bookId = params.get('bookId');
+
+        async function loadBook() {
+            if (!bookId) {
+                // Try sessionStorage
+                const saved = sessionStorage.getItem('currentBook');
+                if (saved) {
+                    book = JSON.parse(saved);
+                    initEditor();
+                    return;
+                }
+                document.getElementById('loading').innerHTML = '<p class="text-red-500 text-lg">缺少 bookId 参数。请从书架选择一本绘本编辑。</p><a href="/" class="text-primary underline mt-4 inline-block">返回书架</a>';
+                return;
+            }
+            try {
+                const resp = await fetch(`/api/books/${bookId}`);
+                const data = await resp.json();
+                if (data.book) {
+                    book = data.book;
+                    initEditor();
+                } else {
+                    throw new Error('绘本未找到');
+                }
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<p class="text-red-500 text-lg">加载失败: ${err.message}</p><a href="/" class="text-primary underline mt-4 inline-block">返回书架</a>`;
+            }
+        }
+
+        function initEditor() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('editor').classList.remove('hidden');
+            document.getElementById('book-title-display').textContent = `编辑「${book.title}」`;
+            document.getElementById('book-summary').textContent = book.summary || '';
+            document.title = `编辑 ${book.title} - 魔法绘本`;
+            buildStrip();
+            showPage(0);
+        }
+
+        function buildStrip() {
+            const strip = document.getElementById('page-strip');
+            strip.innerHTML = '';
+            (book.pages || []).forEach((p, i) => {
+                const thumb = document.createElement('div');
+                thumb.className = `page-thumb flex-shrink-0 w-28 cursor-pointer snap-start rounded-xl overflow-hidden border-4 ${i === currentIdx ? 'border-primary' : 'border-transparent'} hover:border-primary/50 transition-all`;
+                thumb.onclick = () => { saveCurrent(); showPage(i); };
+                thumb.innerHTML = `
+                    <div class="aspect-[3/4] bg-surface-container-high relative">
+                        <img src="${p.imageUrl || DEFAULT_IMG}" class="w-full h-full object-cover" />
+                        <div class="absolute bottom-0 inset-x-0 bg-black/50 text-white text-center text-xs py-1 font-bold">${i + 1}</div>
+                    </div>`;
+                strip.appendChild(thumb);
+            });
+        }
+
+        function showPage(idx) {
+            if (!book.pages || !book.pages[idx]) return;
+            currentIdx = idx;
+            const p = book.pages[idx];
+            document.getElementById('page-image').src = p.imageUrl || DEFAULT_IMG;
+            document.getElementById('page-badge').textContent = `第 ${idx + 1} / ${book.pages.length} 页`;
+            document.getElementById('edit-title').value = p.title || '';
+            document.getElementById('edit-text').value = p.text || '';
+            document.getElementById('edit-hint').value = p.interactiveHint || '';
+            document.getElementById('edit-tts').value = p.ttsPrompt || '';
+            document.getElementById('edit-prompt').value = p.imagePrompt || '';
+            updateTextCount();
+            // Update strip active state
+            document.querySelectorAll('.page-thumb').forEach((t, i) => {
+                t.classList.toggle('border-primary', i === idx);
+                t.classList.toggle('border-transparent', i !== idx);
+            });
+            // Update nav buttons
+            document.getElementById('btn-prev').disabled = idx === 0;
+            document.getElementById('btn-prev').classList.toggle('opacity-40', idx === 0);
+            document.getElementById('btn-next').disabled = idx === book.pages.length - 1;
+            document.getElementById('btn-next').classList.toggle('opacity-40', idx === book.pages.length - 1);
+        }
+
+        function saveCurrent() {
+            if (!book.pages || !book.pages[currentIdx]) return;
+            const p = book.pages[currentIdx];
+            const newTitle = document.getElementById('edit-title').value;
+            const newText = document.getElementById('edit-text').value;
+            const newHint = document.getElementById('edit-hint').value;
+            const newTts = document.getElementById('edit-tts').value;
+            const newPrompt = document.getElementById('edit-prompt').value;
+            if (p.title !== newTitle || p.text !== newText || p.interactiveHint !== newHint || p.ttsPrompt !== newTts || p.imagePrompt !== newPrompt) {
+                p.title = newTitle;
+                p.text = newText;
+                p.interactiveHint = newHint;
+                p.ttsPrompt = newTts;
+                p.imagePrompt = newPrompt;
+                hasChanges = true;
+            }
+        }
+
+        // Insert TTS tag at cursor position in the ttsPrompt textarea
+        function insertTag(tag) {
+            const textarea = document.getElementById('edit-tts');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const val = textarea.value;
+            // Add a space before tag if needed
+            const before = val.substring(0, start);
+            const after = val.substring(end);
+            const needSpace = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+            textarea.value = before + (needSpace ? ' ' : '') + tag + ' ' + after;
+            const newPos = start + (needSpace ? 1 : 0) + tag.length + 1;
+            textarea.selectionStart = textarea.selectionEnd = newPos;
+            textarea.focus();
+        }
+
+        function prevPage() { if (currentIdx > 0) { saveCurrent(); showPage(currentIdx - 1); } }
+        function nextPage() { if (currentIdx < book.pages.length - 1) { saveCurrent(); showPage(currentIdx + 1); } }
+
+        function updateTextCount() {
+            const len = (document.getElementById('edit-text').value || '').length;
+            const el = document.getElementById('text-count');
+            el.textContent = `${len} 字`;
+            el.classList.toggle('text-red-500', len > 15);
+        }
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'edit-text') updateTextCount();
+        });
+
+        async function saveAll() {
+            saveCurrent();
+            if (!book.bookId && !bookId) { alert('无法保存：缺少 bookId'); return; }
+            const id = book.bookId || bookId;
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span> 保存中...';
+            try {
+                const resp = await fetch(`/api/books/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pages: book.pages }),
+                });
+                const result = await resp.json();
+                if (result.ok) {
+                    // Update sessionStorage too
+                    sessionStorage.setItem('currentBook', JSON.stringify(book));
+                    showToast('✅ 修改已保存！');
+                    hasChanges = false;
+                } else {
+                    throw new Error(result.error || '保存失败');
+                }
+            } catch (err) {
+                showToast('❌ 保存失败: ' + err.message);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined text-lg">save</span> 保存修改';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => { toast.classList.remove('opacity-100'); toast.classList.add('opacity-0'); }, 2500);
+        }
+
+        // Regenerate current page image via API
+        async function regeneratePage() {
+            saveCurrent();
+            const id = book.bookId || bookId;
+            if (!id) { alert('缺少 bookId'); return; }
+            const p = book.pages[currentIdx];
+            if (!p.imagePrompt || !p.text) { alert('请先填写故事文字和图片提示词'); return; }
+
+            if (!confirm(`确定要重新生成第 ${currentIdx + 1} 页的插画吗？\n这需要约30秒...`)) return;
+
+            const btn = document.getElementById('regen-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span> AI 生成中...';
+
+            try {
+                const resp = await fetch(`/api/books/${id}/regenerate-page`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pageIndex: currentIdx,
+                        imagePrompt: p.imagePrompt,
+                        text: p.text,
+                        style: book.style,
+                    }),
+                });
+                const result = await resp.json();
+                if (result.ok && result.imageUrl) {
+                    p.imageUrl = result.imageUrl;
+                    document.getElementById('page-image').src = result.imageUrl;
+                    buildStrip();
+                    sessionStorage.setItem('currentBook', JSON.stringify(book));
+                    showToast('✅ 页面已重新生成！');
+                    hasChanges = false;
+                } else {
+                    throw new Error(result.error || '生成失败');
+                }
+            } catch (err) {
+                showToast('❌ 重新生成失败: ' + err.message);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1;">auto_fix_high</span> 重新生成这一页';
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.metaKey && e.key === 's' || e.ctrlKey && e.key === 's') { e.preventDefault(); saveAll(); }
+            if (e.key === 'ArrowLeft' && !e.target.matches('input,textarea')) prevPage();
+            if (e.key === 'ArrowRight' && !e.target.matches('input,textarea')) nextPage();
+        });
+
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            saveCurrent();
+            if (hasChanges) { e.preventDefault(); e.returnValue = ''; }
+        });
+
+        loadBook();
+    </script>
+</body>
+
+</html>
