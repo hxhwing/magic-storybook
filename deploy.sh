@@ -43,6 +43,7 @@ FRONTEND_URL="https://${FRONTEND_SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 A2A_URL="https://${A2A_SERVICE}-${PROJECT_NUMBER}.${REGION}.run.app"
 
 IAP_MEMBER="${IAP_MEMBER:-group:googlers@google.com}"
+CURRENT_USER="$(gcloud config get-value account 2>/dev/null)"   # the Cloud Shell user running this
 GE_APP_ID="${GE_APP_ID:-}"
 
 RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
@@ -110,7 +111,7 @@ run gcloud run services add-iam-policy-binding "$A2A_SERVICE" \
 # ── 6. Deploy the frontend service (IAP-protected, for users) ────────────────
 run gcloud beta run deploy "$FRONTEND_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --source . $RUN_FLAGS \
-  --no-allow-unauthenticated --iap --no-invoker-iam-check \
+  --no-allow-unauthenticated --iap \
   --update-env-vars "${COMMON_ENV},APP_URL=${FRONTEND_URL},READER_BASE_URL=${FRONTEND_URL}"
 
 gcloud beta services identity create --service=iap.googleapis.com --project "$PROJECT_ID" >/dev/null 2>&1 || true
@@ -121,11 +122,19 @@ run gcloud beta iap web add-iam-policy-binding \
   --member="$IAP_MEMBER" --role=roles/iap.httpsResourceAccessor \
   --resource-type=cloud-run --service="$FRONTEND_SERVICE" \
   --region="$REGION" --project="$PROJECT_ID"
+# Also grant the current Cloud Shell user so whoever runs this can reach the app.
+if [[ -n "$CURRENT_USER" && "user:$CURRENT_USER" != "$IAP_MEMBER" ]]; then
+  run gcloud beta iap web add-iam-policy-binding \
+    --member="user:${CURRENT_USER}" --role=roles/iap.httpsResourceAccessor \
+    --resource-type=cloud-run --service="$FRONTEND_SERVICE" \
+    --region="$REGION" --project="$PROJECT_ID"
+fi
 
 # ── 7. Register the A2A service with Gemini Enterprise (optional) ─────────────
 if [[ -n "$GE_APP_ID" ]]; then
-  command -v agents-cli >/dev/null 2>&1 || uv tool install google-agents-cli
-  run agents-cli publish gemini-enterprise \
+  # Invoke via `uv tool run` so we don't depend on ~/.local/bin being on PATH
+  # (uv fetches google-agents-cli on demand if it isn't installed yet).
+  run uv tool run --from google-agents-cli agents-cli publish gemini-enterprise \
     --registration-type a2a \
     --agent-card-url "${A2A_URL}/a2a/app/.well-known/agent-card.json" \
     --gemini-enterprise-app-id "$GE_APP_ID" \
