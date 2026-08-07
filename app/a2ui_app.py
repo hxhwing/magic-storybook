@@ -26,6 +26,8 @@ Key A2A specifics handled here (the agent itself is channel-agnostic):
   • _activate_a2ui_extension — echoes GE's requested A2UI extension so it renders
     the escape-hatch DataParts (built in app/a2ui_render.py).
   • _SanitizingSessionService — keeps escape-hatch bytes out of session history.
+  • _drop_request_custom_metadata — keeps GE's request metadata off ADK events, so
+    it can't come back as a stringified adk_custom_metadata that GE rejects.
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ from a2a.types import (
     Message,
     Part,
     Role,
+    TaskArtifactUpdateEvent,
     TaskState,
     TaskStatus,
     TaskStatusUpdateEvent,
@@ -56,6 +59,11 @@ from a2ui.schema.catalog_provider import FileSystemCatalogProvider
 from a2ui.schema.common_modifiers import remove_strict_validation
 from a2ui.schema.constants import VERSION_0_8
 from a2ui.schema.manager import A2uiSchemaManager
+from google.adk.a2a.converters.part_converter import convert_a2a_part_to_genai_part
+from google.adk.a2a.converters.request_converter import (
+    AgentRunRequest,
+    convert_a2a_request_to_agent_run_request,
+)
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
 from google.adk.a2a.executor.config import A2aAgentExecutorConfig, ExecuteInterceptor
 from google.adk.events import Event as AdkEvent
@@ -70,6 +78,50 @@ _CATALOG_V0_8 = os.path.join(_APP_DIR, "a2ui", "catalog", "0.8", "storybook_cata
 _EXAMPLES_V0_8 = os.path.join(_APP_DIR, "a2ui", "examples", "0.8")
 _A2UI_EXT_BASE = "https://a2ui.org/a2a-extension/a2ui"
 _ESCAPE_HATCH_PREFIX = b"<a2a_datapart_json>"
+# ADK stamps event metadata under this key; see _drop_request_custom_metadata.
+_ADK_CUSTOM_METADATA_KEY = "adk_custom_metadata"
+
+
+def _drop_request_custom_metadata(
+    request: RequestContext,
+    part_converter=convert_a2a_part_to_genai_part,
+) -> AgentRunRequest:
+    """Request converter that keeps the client's request metadata off ADK events.
+
+    GE now sends request-level metadata (a2uiClientCapabilities + the activated
+    A2UI extension URI). ADK's default converter wraps it as
+    ``RunConfig.custom_metadata={"a2a_metadata": {...}}`` and stamps it on every
+    ADK event; ``from_adk_event._serialize_value`` then ``str()``s it (a plain
+    dict has no ``model_dump``) into ``status.message.metadata`` under
+    ``adk_custom_metadata``. GE feeds that string into its own Event.custom_metadata
+    dict field and rejects the whole turn:
+    "Failed to convert status update: ... custom_metadata Input should be a valid
+    dictionary". Nothing here reads a2a_metadata, so drop it at the source.
+    """
+    run_request = convert_a2a_request_to_agent_run_request(request, part_converter)
+    if run_request.run_config is not None:
+        run_request.run_config.custom_metadata = None
+    return run_request
+
+
+def _strip_stringified_custom_metadata(a2a_event) -> None:
+    """Belt-and-braces: drop adk_custom_metadata when it isn't a JSON object.
+
+    Covers any other path that stamps it (e.g. artifact updates), so a non-dict
+    value can never reach GE's status-update/artifact converters.
+    """
+    holders = []
+    if isinstance(a2a_event, TaskStatusUpdateEvent) and a2a_event.status.message:
+        holders.append(a2a_event.status.message)
+    elif isinstance(a2a_event, TaskArtifactUpdateEvent):
+        holders.append(a2a_event.artifact)
+    holders.append(a2a_event)
+    for holder in holders:
+        metadata = getattr(holder, "metadata", None)
+        if isinstance(metadata, dict) and not isinstance(
+            metadata.get(_ADK_CUSTOM_METADATA_KEY, {}), dict
+        ):
+            metadata.pop(_ADK_CUSTOM_METADATA_KEY, None)
 
 
 class _SanitizingSessionService(InMemorySessionService):
@@ -125,6 +177,7 @@ async def _inject_status_update(executor_context, a2a_event, adk_event):
     TaskStatusUpdateEvent whose message part is flagged adk_thought. We intercept
     each outgoing event and, when the delta carries a status, prepend that event.
     """
+    _strip_stringified_custom_metadata(a2a_event)
     if not adk_event:
         return a2a_event
     state_delta = getattr(getattr(adk_event, "actions", None), "state_delta", None)
@@ -234,6 +287,7 @@ def build_a2a_routes() -> list:
     executor = A2aAgentExecutor(
         runner=a2ui_app.get_runner(),
         config=A2aAgentExecutorConfig(
+            request_converter=_drop_request_custom_metadata,
             execute_interceptors=[
                 ExecuteInterceptor(
                     before_agent=_activate_a2ui_extension,
